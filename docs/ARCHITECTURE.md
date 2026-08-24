@@ -1,8 +1,10 @@
-# Architecture — Customer Club Observability
+# Architecture
 
-This repository is the **platform** (Grafana LGTM + OpenTelemetry). It is not the Customer Club backend or frontend.
+This repository is the **observability platform** (Grafana LGTM + OpenTelemetry).
+It is not the application backend or frontend.
 
-Laptop = one Docker Compose project on a single host. Production at the bank splits the same pieces across Edge and Trust (see below).
+Laptop / lab = one Docker Compose project on a single host. Production can split
+the same pieces across an Edge host and a Trust host (see below).
 
 ## C4 container diagram
 
@@ -72,7 +74,7 @@ The OpenTelemetry Collector sits in front of LGTM. Apps never send to Loki/Tempo
 | Tempo | Has | Trace store + span-metrics | 3200 |
 | Prometheus | Has | Metrics (stands in for Mimir) | 9090 |
 | otel-collector | Has | OTLP intake, PII filter, routing | 4317 / 4318 / 9464 |
-| Alertmanager | Has | Alert routing UI — no bank webhook yet | 9093 |
+| Alertmanager | Has | Alert routing UI — no external webhook yet | 9093 |
 | blackbox-exporter | Has | HTTP/TCP probes of the apps | internal |
 | node-exporter | Has | Host CPU / disk / memory | internal |
 | cAdvisor | Has | Container metrics | internal |
@@ -89,15 +91,15 @@ The OpenTelemetry Collector sits in front of LGTM. Apps never send to Loki/Tempo
 | Seq / Elasticsearch | Replaced by Loki + OTLP. |
 | .NET / Vue instrumentation | Lives in `customer-club-api` / `customer-club`. |
 
-### Target bank architecture, not built in this compose yet
+### Target production layout, not built in this compose yet
 
 | Component | Notes |
 |-----------|--------|
 | sql-exporter | SQL wait stats, deadlocks, index DMVs |
-| Edge collector (second agent) | Laptop uses one collector; prod Edge needs a forwarder |
-| nginx log scrape + `/otel/` RUM path | App deploy / nginx repo |
-| RED dashboards for customer-api / login / nginx | Only `grafana/dashboards/stack-health.json` exists |
-| Real alert channels | Email / SMS / bank SOAR |
+| Edge collector (second agent) | Laptop uses one collector; Edge needs a forwarder |
+| nginx log scrape + `/otel/` RUM path | App / nginx config |
+| RED dashboards for APIs / login / nginx | Only `grafana/dashboards/stack-health.json` exists |
+| Real alert channels | Email / SMS / on-call webhook |
 | Grafana OnCall | Alertmanager UI only |
 
 ## Production split (same images, two hosts)

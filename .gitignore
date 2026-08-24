@@ -1,4 +1,16 @@
+# Local secrets and junk
 .env
 *.local
 data/
 .DS_Store
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+*~
+
+# Generated / runtime
+*.log
+tmp/
+.cache/
