@@ -1,0 +1,235 @@
+# Customer Club observability — laptop / lab stack.
+# Independent of customer-club and customer-club-api repos.
+#
+# Usage:
+#   ./cc-obs.sh up
+#   ./cc-obs.sh up --demo          # synthetic traces/metrics/logs
+#   ./cc-obs.sh up --probe-apps    # blackbox against local-dev ports
+#   ./cc-obs.sh smoke
+#   ./cc-obs.sh down
+
+name: ${COMPOSE_PROJECT_NAME:-customer-club-obs}
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.159.0
+    container_name: cc-obs-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./config/otel-collector.yml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "${OTLP_GRPC_PORT:-4317}:4317"
+      - "${OTLP_HTTP_PORT:-4318}:4318"
+      - "${COLLECTOR_PROM_PORT:-9464}:9464"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_started
+    networks:
+      - obs-network
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    container_name: cc-obs-tempo
+    restart: unless-stopped
+    user: "0:0"
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    volumes:
+      - ./config/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"
+    networks:
+      - obs-network
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: cc-obs-loki
+    restart: unless-stopped
+    user: "0:0"
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./config/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    networks:
+      - obs-network
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: cc-obs-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --web.enable-lifecycle
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./config/prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./config/blackbox-http-targets.yml:/etc/prometheus/blackbox-http-targets.yml:ro
+      - ./config/blackbox-tcp-targets.yml:/etc/prometheus/blackbox-tcp-targets.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - otel-collector
+      - alertmanager
+      - blackbox-exporter
+    networks:
+      - obs-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: cc-obs-alertmanager
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./config/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    networks:
+      - obs-network
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.26.0
+    container_name: cc-obs-blackbox
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./config/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - obs-network
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.0
+    container_name: cc-obs-node-exporter
+    restart: unless-stopped
+    pid: host
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host/root
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
+    networks:
+      - obs-network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cc-obs-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - obs-network
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: cc-obs-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_DEFAULT_THEME: dark
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3300}:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - obs-network
+
+  telemetrygen-traces:
+    profiles: ["demo"]
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.159.0
+    container_name: cc-obs-telemetrygen-traces
+    restart: unless-stopped
+    command:
+      - traces
+      - --otlp-endpoint=otel-collector:4317
+      - --otlp-insecure
+      - --duration=24h
+      - --rate=2
+      - --service=customer-api-demo
+    depends_on:
+      - otel-collector
+    networks:
+      - obs-network
+
+  telemetrygen-metrics:
+    profiles: ["demo"]
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.159.0
+    container_name: cc-obs-telemetrygen-metrics
+    restart: unless-stopped
+    command:
+      - metrics
+      - --otlp-endpoint=otel-collector:4317
+      - --otlp-insecure
+      - --duration=24h
+      - --rate=2
+      - --service=customer-api-demo
+    depends_on:
+      - otel-collector
+    networks:
+      - obs-network
+
+  telemetrygen-logs:
+    profiles: ["demo"]
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.159.0
+    container_name: cc-obs-telemetrygen-logs
+    restart: unless-stopped
+    command:
+      - logs
+      - --otlp-endpoint=otel-collector:4317
+      - --otlp-insecure
+      - --duration=24h
+      - --rate=2
+      - --service=customer-api-demo
+    depends_on:
+      - otel-collector
+    networks:
+      - obs-network
+
+volumes:
+  tempo_data:
+  loki_data:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:
+
+networks:
+  obs-network:
+    driver: bridge

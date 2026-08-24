@@ -1,0 +1,48 @@
+groups:
+  - name: stack
+    rules:
+      - alert: ObservabilityComponentDown
+        expr: up{job=~"otel-collector|prometheus|tempo|loki|node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: p0
+          team: platform
+        annotations:
+          summary: "{{ $labels.job }} is down"
+          description: "Scrape target {{ $labels.instance }} has been down for 1 minute."
+
+  - name: customer-club-apps
+    rules:
+      - alert: CustomerClubHealthcheckFailing
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 1m
+        labels:
+          severity: p0
+          team: backend
+        annotations:
+          summary: "HTTP probe failed for {{ $labels.instance }}"
+          description: "Start Customer Club local-dev, or disable compose profile probe-apps."
+
+      - alert: CustomerClubSqlUnreachable
+        expr: probe_success{job="blackbox-tcp"} == 0
+        for: 1m
+        labels:
+          severity: p0
+          team: dba
+        annotations:
+          summary: "SQL TCP probe failed for {{ $labels.instance }}"
+          description: "Local SQL is on port 15433 when customer-club-api uses --profile local-sql."
+
+      - alert: SpanErrorRateHigh
+        expr: |
+          sum(rate(traces_spanmetrics_calls_total{status_code="STATUS_CODE_ERROR"}[5m]))
+          /
+          clamp_min(sum(rate(traces_spanmetrics_calls_total[5m])), 0.001)
+          > 0.05
+        for: 2m
+        labels:
+          severity: p1
+          team: backend
+        annotations:
+          summary: "Trace error rate above 5%"
+          description: "Enable demo profile or send real OTLP from the APIs to see this fire on exceptions."

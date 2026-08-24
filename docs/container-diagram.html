@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="utf-8" />
+  <title>Customer Club Observability — Container diagram</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "DejaVu Sans", "Noto Naskh Arabic", "Segoe UI", sans-serif;
+      color: #1a2332;
+      background: #fff;
+    }
+    h1 { font-size: 20px; margin: 0 0 4px; font-weight: 650; }
+    h2 { font-size: 13px; margin: 12px 0 6px; font-weight: 650; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    th, td {
+      border: 1px solid #d5dbe3;
+      padding: 4px 7px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .sub { font-size: 11px; color: #5b6573; margin: 0 0 8px; }
+    .page { page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+    th { background: #eef2f6; font-weight: 650; }
+    tr.have td:nth-child(2) { color: #0d6b3d; font-weight: 650; }
+    tr.miss td:nth-child(2) { color: #9a3412; font-weight: 650; }
+    .note { font-size: 11px; color: #5b6573; margin-top: 10px; }
+    svg { width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <h1>Customer Club Observability — C4 container diagram</h1>
+    <p class="sub">
+      Laptop / lab stack · Docker Compose project <code>customer-club-obs</code> · LGTM with Prometheus as M ·
+      Apps are outside this repo
+    </p>
+    <svg viewBox="0 0 1180 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Container diagram">
+      <rect x="0" y="0" width="1180" height="620" fill="#f7f8fa"/>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#475569"/>
+        </marker>
+        <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#1d4ed8"/>
+        </marker>
+      </defs>
+
+      <!-- External -->
+      <rect x="24" y="16" width="280" height="88" rx="6" fill="#fff" stroke="#94a3b8" stroke-dasharray="5 3"/>
+      <text x="38" y="36" font-size="11" fill="#64748b">External — not this repo</text>
+      <text x="38" y="56" font-size="14" font-weight="700" fill="#1e293b">Customer Club apps</text>
+      <text x="38" y="74" font-size="11" fill="#64748b">admin-api · customer-api · nginx · SPA</text>
+      <text x="38" y="90" font-size="10" fill="#64748b">OTLP later: :4318  ·  probe: :8081 :8082 :3000</text>
+
+      <rect x="324" y="16" width="260" height="88" rx="6" fill="#fff" stroke="#94a3b8" stroke-dasharray="5 3"/>
+      <text x="338" y="36" font-size="11" fill="#64748b">Compose profile demo</text>
+      <text x="338" y="56" font-size="14" font-weight="700" fill="#1e293b">telemetrygen ×3</text>
+      <text x="338" y="74" font-size="11" fill="#64748b">fake traces · metrics · logs</text>
+      <text x="338" y="90" font-size="10" fill="#64748b">service = customer-api-demo</text>
+
+      <rect x="604" y="16" width="250" height="88" rx="6" fill="#fff" stroke="#334155"/>
+      <text x="618" y="36" font-size="11" fill="#64748b">Person</text>
+      <text x="618" y="56" font-size="14" font-weight="700" fill="#1e293b">Operator</text>
+      <text x="618" y="74" font-size="11" fill="#64748b">Grafana UI :3300  ·  PAM in prod</text>
+      <text x="618" y="90" font-size="10" fill="#64748b">Alertmanager :9093</text>
+
+      <rect x="874" y="16" width="282" height="88" rx="6" fill="#fff" stroke="#94a3b8" stroke-dasharray="5 3"/>
+      <text x="888" y="36" font-size="11" fill="#64748b">External data store</text>
+      <text x="888" y="56" font-size="14" font-weight="700" fill="#1e293b">SQL Server</text>
+      <text x="888" y="74" font-size="11" fill="#64748b">laptop :15433  ·  bank SQL in prod</text>
+      <text x="888" y="90" font-size="10" fill="#64748b">TCP probe only — no sql-exporter yet</text>
+
+      <!-- System boundary -->
+      <rect x="24" y="124" width="1132" height="480" rx="8" fill="#eef4fb" stroke="#1d4ed8" stroke-width="1.5"/>
+      <text x="40" y="148" font-size="13" font-weight="700" fill="#1d4ed8">Container: customer-club-observability  ·  network obs-network</text>
+      <text x="40" y="166" font-size="11" fill="#475569">Single-host laptop = agent + gateway in one collector. Production splits Edge collector vs Trust LGTM.</text>
+      <line x1="164" y1="104" x2="154" y2="188" stroke="#1d4ed8" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+      <line x1="454" y1="104" x2="200" y2="188" stroke="#1d4ed8" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+      <line x1="264" y1="247" x2="292" y2="238" stroke="#0f766e" stroke-width="1.4" marker-end="url(#arrow)"/>
+      <line x1="264" y1="247" x2="688" y2="238" stroke="#7c3aed" stroke-width="1.4" marker-end="url(#arrow)"/>
+      <line x1="264" y1="255" x2="876" y2="238" stroke="#b45309" stroke-width="1.4" marker-end="url(#arrow)"/>
+      <line x1="729" y1="318" x2="729" y2="288" stroke="#7c3aed" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="1004" y1="288" x2="1004" y2="318" stroke="#b45309" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="876" y1="269" x2="512" y2="318" stroke="#b45309" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="729" y1="104" x2="574" y2="188" stroke="#334155" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- Collector -->
+      <rect x="44" y="188" width="220" height="118" rx="6" fill="#1d4ed8"/>
+      <text x="58" y="214" font-size="11" fill="#bfdbfe">Intake</text>
+      <text x="58" y="238" font-size="15" font-weight="700" fill="#fff">otel-collector</text>
+      <text x="58" y="258" font-size="11" fill="#dbeafe">OTLP :4317 gRPC · :4318 HTTP</text>
+      <text x="58" y="274" font-size="11" fill="#dbeafe">Prom scrape :9464</text>
+      <text x="58" y="290" font-size="10" fill="#bfdbfe">PII filter · batch · route</text>
+
+      <!-- LGTM storage -->
+      <rect x="292" y="188" width="168" height="100" rx="6" fill="#fff" stroke="#0f766e" stroke-width="1.4"/>
+      <text x="304" y="210" font-size="10" fill="#0f766e">L — logs</text>
+      <text x="304" y="232" font-size="14" font-weight="700" fill="#134e4a">loki :3100</text>
+      <text x="304" y="250" font-size="11" fill="#475569">OTLP ingest from collector</text>
+      <text x="304" y="268" font-size="10" fill="#64748b">volume loki_data</text>
+
+      <rect x="480" y="188" width="188" height="100" rx="6" fill="#fff" stroke="#1d4ed8" stroke-width="1.4"/>
+      <text x="492" y="210" font-size="10" fill="#1d4ed8">G — UI</text>
+      <text x="492" y="232" font-size="14" font-weight="700" fill="#1e3a8a">grafana :3300</text>
+      <text x="492" y="250" font-size="11" fill="#475569">Explore + 1 stack dashboard</text>
+      <text x="492" y="268" font-size="10" fill="#64748b">admin / admin on laptop</text>
+
+      <rect x="688" y="188" width="168" height="100" rx="6" fill="#fff" stroke="#7c3aed" stroke-width="1.4"/>
+      <text x="700" y="210" font-size="10" fill="#7c3aed">T — traces</text>
+      <text x="700" y="232" font-size="14" font-weight="700" fill="#4c1d95">tempo :3200</text>
+      <text x="700" y="250" font-size="11" fill="#475569">OTLP from collector</text>
+      <text x="700" y="268" font-size="10" fill="#64748b">span-metrics → Prometheus</text>
+
+      <rect x="876" y="188" width="256" height="100" rx="6" fill="#fff" stroke="#b45309" stroke-width="1.4"/>
+      <text x="888" y="210" font-size="10" fill="#b45309">M — metrics (Prometheus, not Mimir)</text>
+      <text x="888" y="232" font-size="14" font-weight="700" fill="#7c2d12">prometheus :9090</text>
+      <text x="888" y="250" font-size="11" fill="#475569">scrape collector · node · cadvisor · blackbox</text>
+      <text x="888" y="268" font-size="10" fill="#64748b">alert rules → Alertmanager</text>
+
+      <!-- Alerting + probes -->
+      <rect x="292" y="318" width="220" height="88" rx="6" fill="#fff" stroke="#334155"/>
+      <text x="304" y="340" font-size="10" fill="#64748b">Alert routing</text>
+      <text x="304" y="360" font-size="14" font-weight="700" fill="#1e293b">alertmanager :9093</text>
+      <text x="304" y="378" font-size="11" fill="#475569">UI only — no email/SMS webhook yet</text>
+      <text x="304" y="394" font-size="10" fill="#64748b">P0/P1 in prometheus-alerts.yml</text>
+
+      <rect x="532" y="318" width="260" height="88" rx="6" fill="#fff" stroke="#334155"/>
+      <text x="544" y="340" font-size="10" fill="#64748b">Synthetic probes</text>
+      <text x="544" y="360" font-size="14" font-weight="700" fill="#1e293b">blackbox-exporter</text>
+      <text x="544" y="378" font-size="11" fill="#475569">HTTP healthz + SQL TCP (optional)</text>
+      <text x="544" y="394" font-size="10" fill="#64748b">./cc-obs.sh up --probe-apps</text>
+
+      <rect x="812" y="318" width="320" height="88" rx="6" fill="#fff" stroke="#334155"/>
+      <text x="824" y="340" font-size="10" fill="#64748b">Host / container golden signals</text>
+      <text x="824" y="360" font-size="14" font-weight="700" fill="#1e293b">node-exporter + cadvisor</text>
+      <text x="824" y="378" font-size="11" fill="#475569">CPU, disk, memory, container restarts</text>
+      <text x="824" y="394" font-size="10" fill="#64748b">scraped by Prometheus</text>
+
+      <!-- Flow notes -->
+      <rect x="44" y="430" width="1112" height="154" rx="6" fill="#fff" stroke="#cbd5e1"/>
+      <text x="60" y="454" font-size="13" font-weight="700" fill="#1e293b">Request / telemetry flow</text>
+      <text x="60" y="478" font-size="12" fill="#334155">1. Apps or telemetrygen send OTLP → otel-collector (never talk to Loki/Tempo/Grafana directly).</text>
+      <text x="60" y="500" font-size="12" fill="#334155">2. Collector strips OTP/password/token/national_id, batches, then exports traces→Tempo, logs→Loki, metrics→:9464.</text>
+      <text x="60" y="522" font-size="12" fill="#334155">3. Prometheus scrapes :9464, Tempo span-metrics, node-exporter, cAdvisor, blackbox. Rules fire → Alertmanager.</text>
+      <text x="60" y="544" font-size="12" fill="#334155">4. Operator opens Grafana; datasources join on trace_id (Tempo ↔ Loki ↔ Prometheus exemplars).</text>
+      <text x="60" y="566" font-size="12" fill="#334155">Solid = in this repo today. Dashed externals = not instrumented yet (SDK lives in customer-club-api / customer-club).</text>
+    </svg>
+  </section>
+
+  <section class="page">
+    <h1>Inventory — what this repo has vs does not</h1>
+    <p class="sub">LGTM here means Loki + Grafana + Tempo + Prometheus (Mimir is the scaled-out M; not used on this laptop).</p>
+
+    <h2>In this Docker Compose project</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Status</th>
+          <th>Role</th>
+          <th>Laptop port</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="have"><td>Loki</td><td>Has</td><td>Log store</td><td>3100</td></tr>
+        <tr class="have"><td>Grafana</td><td>Has</td><td>One UI, Explore, one stack-health dashboard</td><td>3300</td></tr>
+        <tr class="have"><td>Tempo</td><td>Has</td><td>Trace store + span-metrics to Prometheus</td><td>3200</td></tr>
+        <tr class="have"><td>Prometheus</td><td>Has</td><td>Metrics (stands in for Mimir)</td><td>9090</td></tr>
+        <tr class="have"><td>otel-collector</td><td>Has</td><td>OTLP intake, PII filter, routing</td><td>4317 / 4318 / 9464</td></tr>
+        <tr class="have"><td>Alertmanager</td><td>Has</td><td>Alert routing UI — no bank webhook yet</td><td>9093</td></tr>
+        <tr class="have"><td>blackbox-exporter</td><td>Has</td><td>HTTP/TCP probes of the apps</td><td>internal</td></tr>
+        <tr class="have"><td>node-exporter</td><td>Has</td><td>Host CPU / disk / memory</td><td>internal</td></tr>
+        <tr class="have"><td>cAdvisor</td><td>Has</td><td>Container metrics</td><td>internal</td></tr>
+        <tr class="have"><td>telemetrygen ×3</td><td>Has (profile demo)</td><td>Synthetic traces / metrics / logs</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Intentionally not in this repo (wrong scale or wrong place)</h2>
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Status</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr class="miss"><td>Mimir</td><td>Not here</td><td>Multi-cluster metrics. Prometheus is enough for Compose / one bank pair of hosts.</td></tr>
+        <tr class="miss"><td>Distributed Tempo / Loki</td><td>Not here</td><td>Single-binary is the laptop and first prod shape.</td></tr>
+        <tr class="miss"><td>Pyroscope</td><td>Not here</td><td>CPU line-level profiling — later, not required for LGTM.</td></tr>
+        <tr class="miss"><td>Grafana Alloy</td><td>Not here</td><td>Chose CNCF otel-collector-contrib instead.</td></tr>
+        <tr class="miss"><td>Seq / Elasticsearch</td><td>Not here</td><td>Replaced by Loki + OTLP.</td></tr>
+        <tr class="miss"><td>.NET / Vue instrumentation</td><td>Not this repo</td><td>Lives in customer-club-api and customer-club when you add OTLP.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>In the target bank architecture, not built in this compose yet</h2>
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Status</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr class="miss"><td>sql-exporter</td><td>Missing</td><td>SQL wait stats, deadlocks, index DMVs.</td></tr>
+        <tr class="miss"><td>Edge collector (second agent)</td><td>Missing</td><td>Laptop uses one collector; prod Edge .18 needs its own forwarder.</td></tr>
+        <tr class="miss"><td>nginx log scrape + /otel/ RUM path</td><td>Missing</td><td>Needs customer-nginx change in the app deploy repo.</td></tr>
+        <tr class="miss"><td>RED dashboards for customer-api / login / nginx</td><td>Missing</td><td>Only stack-health.json exists.</td></tr>
+        <tr class="miss"><td>Real alert channels</td><td>Missing</td><td>Email / SMS / bank SOAR webhook.</td></tr>
+        <tr class="miss"><td>Grafana OnCall / paging roster</td><td>Missing</td><td>Alertmanager UI only.</td></tr>
+      </tbody>
+    </table>
+    <p class="note">
+      Source: docker-compose.yml in this repository. Diagram file: docs/customer-club-observability-containers.pdf
+      · regenerate: docs/render-container-pdf.sh
+    </p>
+  </section>
+</body>
+</html>

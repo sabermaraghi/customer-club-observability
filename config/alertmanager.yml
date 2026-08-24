@@ -1,0 +1,18 @@
+route:
+  receiver: default
+  group_by: [alertname, severity]
+  group_wait: 15s
+  group_interval: 1m
+  repeat_interval: 4h
+
+receivers:
+  - name: default
+    # Laptop: look at Alertmanager UI on :9093 and Grafana Alerting.
+    # Later: webhook / email / bank SOAR. Do not put secrets in git.
+
+inhibit_rules:
+  - source_matchers:
+      - severity="p0"
+    target_matchers:
+      - severity="p1"
+    equal: [instance]
